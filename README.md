@@ -12,7 +12,7 @@ This was originally created to notify security analysts of potential new typosqu
 mydomains.csv contains a list of one or more domains, one per line.
 
 # knowndomains.csv
-knowndomains.csv contains domains previously identified as either typosquatters or valid domains. The format of this file is one entry per line in the form of: domain.tld,reason.  Known domains must have a header row containing the text "Domain,Reason".  The reason is not used by crazyParser.  This field should be populated with your description of the domain.
+knowndomains.csv contains domains previously identified as either typosquatters or valid domains. The format of this file is one entry per line in the form of: domain.tld,reason.  knowndomains.csv must have a header row containing the text "Domain,Reason".  The reason is not used by crazyParser.  This field should be populated with your description of the domain.
 
 To populate knowndomains.csv, use URLCrazy to generate output for review.  For each existing domain, review the entry to determine if it is a valid domain or a typosquatter.  Record the domain name and whether the domain is valid or a typosquatter in this file.
 
