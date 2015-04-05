@@ -22,4 +22,4 @@ python crazyParser.py.
 crazyParser takes each domain listed in mydomains.csv and uses URLCrazy to generate a list of typosquatted domains.  Each registered domain is compared against knowndomains.csv.  If there are no new domains discovered, crazyParser will generate an email containing an all clear message.  If any new domains are discovered, the output will be placed in a csv file and attached to an email stating a review is necessary.  This output should be reviewed and the knowndomains.csv file should be updated with the new entry.
 
 # To Do
-- urlcrazy output occasionally contains null bytes which breaks csv.DictReader, need to handle
+- sendMail() will break if multiple recipients are specified
