@@ -24,7 +24,8 @@ and blocking in your web proxy.
         urlcrazy: installed at /usr/bin/urlcrazy. If this installed in an
             alternate location, the value of urlCrazy will need to be
             updated to reflect its location.
-        
+
+crazyParser.py - by @hardwaterhacker - http://hardwatersec.blogspot.com
 '''
 
 import argparse
@@ -85,7 +86,7 @@ def parseOutput(docRoot, knownDomains, resultsFile):
     # Parse each file in dictionary
     for file in filedict:
         with open (file, 'rb') as csvfile:
-            reader = csv.DictReader(csvfile)
+            reader = csv.DictReader(row.replace('\0', '') for row in csvfile)
             for row in reader:
                 if len(row) != 0:
                     if row['CC-A'] != "?":
@@ -194,7 +195,7 @@ def doCleanup(docRoot):
 def main():
 
     # Set up parser for command line arguments
-    parser = argparse.ArgumentParser(prog='crazyParser.py', description='crazyParser 0.1a', add_help=True)
+    parser = argparse.ArgumentParser(prog='crazyParser.py', description='crazyParser 0.1', add_help=True)
     parser.add_argument('-c', '--config', help='Directory location for required config files', default=os.getcwd(), required=False)
     parser.add_argument('-o', '--output', help='Save results to file', default='results.csv', required=False)
     parser.add_argument('-d', help='Directory for saving output, defaults to current directory', default=os.getcwd(), required=False)
