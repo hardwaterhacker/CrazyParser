@@ -1,10 +1,10 @@
 #!/usr/bin/python
+'''Usage: crazyParser.py [-hdsfm] [output_file] [email_address]
 
-'''
-    This script uses urlcrazy to identify possible typosquatted domains.
-    The output is compared against an existing list of typosquatted domains.
-    If any new domains are identified, the results are mailed off for review
-        and blocking in your web proxy.
+This script uses urlcrazy to identify possible typosquatted domains.
+The output is compared against an existing list of typosquatted domains.
+If any new domains are identified, the results are mailed off for review
+and blocking in your web proxy.
 
     Dependencies:
         mydomains.csv
@@ -27,7 +27,9 @@
         
 '''
 
+import argparse
 import os
+import sys
 import subprocess
 import csv
 import smtplib
@@ -36,17 +38,13 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
 
-docRoot = os.getcwd() # get current directory
-
-# set up global files
-resultsFile = os.path.join(docRoot,'results.csv')
-myDomains = os.path.join(docRoot,'mydomains.csv')
-knownDomains = os.path.join(docRoot,'knowndomains.csv')
-outDir = os.path.join(docRoot,'output')  # output directory
-
 urlCrazy = '/usr/bin/urlcrazy' # update if your installation differs
 
-def doCrazy(resultsFile, myDomains):
+
+# set up global defaults
+tempFiles = [] # define temporary files array
+
+def doCrazy(docRoot, resultsFile, myDomains):
     # cleanup old results file
     try:
         os.remove(resultsFile)
@@ -56,11 +54,17 @@ def doCrazy(resultsFile, myDomains):
     with open(myDomains, 'rb') as domains:
         reader = csv.reader(domains)
         for domain in domains:
-            outfile = os.path.join(outDir,(domain.rstrip() + '.csv'))
+            outfile = os.path.join(docRoot,(domain.rstrip() + '.tmp'))
             domain = domain.rstrip()
-            subprocess.call('/usr/bin/urlcrazy -f csv' + ' -o ' + outfile + ' ' + domain, bufsize=4096, shell=True)
+            try:
+                subprocess.call('/usr/bin/urlcrazy -f csv' + ' -o ' + outfile + ' ' + domain, bufsize=4096, shell=True)
+                tempFiles.append(outfile)
+            except:
+                # An error occurred running urlcrazy
+                print "Unexpected error running urlcrazy:", sys.exc_info()[0]
+                pass
     
-def parseOutput():
+def parseOutput(docRoot, knownDomains, resultsFile):
 
     # set up domains dictionary
     domains = []
@@ -72,11 +76,11 @@ def parseOutput():
         for row in reader:
             knowndom.append(row['Domain'])
 
-    # Read all .csv into dictionary
+    # Read all .tmp into dictionary
     filedict = []
-    for f in os.listdir(outDir):
-        if f.endswith(".csv"):
-            filedict.append(os.path.join(outDir, f))
+    for f in os.listdir(docRoot):
+        if f.endswith(".tmp"):
+            filedict.append(os.path.join(docRoot, f))
 
     # Parse each file in dictionary
     for file in filedict:
@@ -100,7 +104,7 @@ def parseOutput():
             writer.writerow({'Domain': row})
     
 
-def sendMail():
+def sendMail(resultsFile):
 
     '''
             sendMail sends the results of urlcrazy scans,
@@ -122,6 +126,7 @@ def sendMail():
 
     mail_user = "mail_sender_account"
     mail_pwd = "your_pass_here"
+    mail_recip = "recipient_address"
 
     def mail(to, subject, text, attachment, numResults):
             msg = MIMEMultipart()
@@ -161,35 +166,81 @@ def sendMail():
     # if it is 1, there were no results
     numResults = sum(1 for line in open(attachment))
     if numResults == 1:
-        mail("recipient@addr.ess",
+        mail(mail_recip,
                 "Daily DNS typosquatting recon report", # subject line
                 "There were no new results in today's scan", # your message here
                 attachment, numResults)
 
     else:
-        mail("recipient_addr.ess",
+        mail(mail_recip,
                 "Daily DNS typosquatting recon report", # subject line
                 "The results from today's DNS typosquatting scan are attached", # your message here
                 attachment, numResults)
 
-def doCleanup():
-    # Delete all temporary .csv files created by urlcrazy
-    for f in os.listdir(outDir):
-        if f.endswith(".csv"):
-            os.remove(os.path.join(outDir, f))
+def doCleanup(docRoot):
+    # Delete all temporary .tmp files created by urlcrazy
+    # Read all .tmp into dictionary
+    filedict = []
+    for f in os.listdir(docRoot):
+        if f.endswith(".tmp"):
+            filedict.append(os.path.join(docRoot, f))
+    for f in tempFiles:
+        try:
+            os.remove(f)
+        except OSError:
+            print "Error removing temporary file: " + f
+            pass
 
-            
-# Make sure to clean up any stale output files
-doCleanup()
+def main():
 
-# Execute urlcrazy
-doCrazy(resultsFile, myDomains)
+    # Set up parser for command line arguments
+    parser = argparse.ArgumentParser(prog='crazyParser.py', description='crazyParser 0.1a', add_help=True)
+    parser.add_argument('-c', '--config', help='Directory location for required config files', default=os.getcwd(), required=False)
+    parser.add_argument('-o', '--output', help='Save results to file', default='results.csv', required=False)
+    parser.add_argument('-d', help='Directory for saving output, defaults to current directory', default=os.getcwd(), required=False)
+    parser.add_argument('-m', '--email', help='Email results upon completion, defaults to True', default=True, required=False)
+    args = parser.parse_args()
 
-# parse output from urlcrazy
-parseOutput()
+    if args.config != os.getcwd():
+        if os.path.isdir(args.config):
+            configDir = args.config
+        else:
+            print "ERROR! Specified configuration directory " + args.config + " does not exist!"
+            sys.exit()
+    else:
+        configDir = args.config
 
-# send results
-sendMail()
+    if args.d != os.getcwd():
+        if os.path.isdir(args.d):
+            docRoot = args.d
+        else:
+            print "ERROR! Specified output directory " + args.d + " does not exist!"
+            sys.exit()
+    else:
+        docRoot = args.d
 
-# Clean up output files
-doCleanup()
+    # set up global files
+    resultsFile = os.path.join(docRoot, args.output)
+    myDomains = os.path.join(configDir,'mydomains.csv')
+    knownDomains = os.path.join(configDir,'knowndomains.csv')
+
+    # Make sure to clean up any stale output files
+    doCleanup(docRoot)
+
+    # Execute urlcrazy
+    doCrazy(docRoot, resultsFile, myDomains)
+
+    # parse output from urlcrazy
+    parseOutput(docRoot, knownDomains, resultsFile)
+
+    # send results if -m/--email is true
+    if args.email == True:
+        sendMail(resultsFile)
+    else:
+        pass
+
+    # Clean up output files
+    doCleanup(docRoot)
+
+if __name__ == "__main__":
+    main()
