@@ -122,13 +122,13 @@ def sendMail(resultsFile):
 
     mail_user = "mail_sender_account"
     mail_pwd = "your_pass_here"
-    mail_recip = "recipient_address"
+    mail_recip = ["recipient_address_1", "recipient_address_2"]
 
     def mail(to, subject, text, attachment, numResults):
             msg = MIMEMultipart()
 
             msg['From'] = mail_user
-            msg['To'] = to
+            msg['To'] = ", ".join(to)
             msg['Subject'] = subject
 
             msg.attach(MIMEText(text))
