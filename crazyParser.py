@@ -261,7 +261,7 @@ def main():
     parser.add_argument('-c', '--config', help='Directory location for required config files', default=os.getcwd(), required=False)
     parser.add_argument('-o', '--output', help='Save results to file, defaults to results.csv', default='results.csv', required=False)
     parser.add_argument('-d', '--directory', help='Directory for saving output, defaults to current directory', default=os.getcwd(), required=False)
-    parser.add_argument('-m', '--email', help='Email results upon completion, defaults to false', action="store_true", default=False, required=False)
+    parser.add_argument('-m', '--email', help='Email results upon completion, defaults to False', action="store_true", default=False, required=False)
     parser.add_argument('--dnstwist', help='Use dnstwist for domain discovery, defaults to False', action="store_true", default=False, required=False)
     parser.add_argument('--urlcrazy', help='Use urlcray for domain discovery, defaults to False', action="store_true", default=False, required=False)
 
