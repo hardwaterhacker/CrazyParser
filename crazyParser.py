@@ -42,6 +42,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
+import atexit
 
 urlcrazyPath = '/usr/bin/urlcrazy' # update if your installation differs
 dnstwistPath = '/opt/dnstwist/dnstwist.py' # update if your installation differs
@@ -57,7 +58,7 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
     except OSError: # file does not exist
         pass
     
-    with open(myDomains, 'rb') as domains:
+    with open(myDomains, 'rbU') as domains:
         reader = csv.reader(domains)
         for domain in domains:
             ucoutfile = os.path.join(docRoot,(domain.rstrip() + '.uctmp'))
@@ -97,7 +98,7 @@ def parseOutput(docRoot, knownDomains, resultsFile, urlcrazy, dnstwist):
 
     # compare known domains to discovered domains
     knowndom = []
-    with open (knownDomains, 'rb') as domfile:
+    with open (knownDomains, 'rbU') as domfile:
         reader = csv.DictReader(domfile)
         for row in reader:
             knowndom.append(row['Domain'])
@@ -111,7 +112,7 @@ def parseOutput(docRoot, knownDomains, resultsFile, urlcrazy, dnstwist):
 
         # Parse each file in urlcrazy dictionary
         for file in ucfiledict:
-            with open (file, 'rb') as csvfile:
+            with open (file, 'rbU') as csvfile:
                 reader = csv.DictReader(row.replace('\0', '') for row in csvfile)
                 for row in reader:
                     if len(row) != 0:
@@ -129,7 +130,7 @@ def parseOutput(docRoot, knownDomains, resultsFile, urlcrazy, dnstwist):
 
         # Parse each file in dnstwist dictionary
         for file in dtfiledict:
-            with open (file, 'rb') as csvfile:
+            with open (file, 'rbU') as csvfile:
                 reader = csv.reader(csvfile)
                 next(reader) # skip header line
                 next(reader) # skip second line, contains original domain
@@ -295,6 +296,9 @@ def main():
 
     # Make sure to clean up any stale output files
     doCleanup(docRoot)
+
+    # Clean up output files at exit
+    atexit.register(doCleanup, docRoot)
     
     # Execute discovery
     doCrazy(docRoot, resultsFile, myDomains, args.urlcrazy, args.dnstwist)
@@ -307,9 +311,6 @@ def main():
         sendMail(resultsFile)
     else:
         pass
-
-    # Clean up output files
-    doCleanup(docRoot)
 
 if __name__ == "__main__":
     main()
