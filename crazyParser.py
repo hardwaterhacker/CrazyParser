@@ -281,7 +281,7 @@ def main():
         configDir = args.config
 
     if args.directory != os.getcwd():
-        if os.path.isdir(args.d):
+        if os.path.isdir(args.directory):
             docRoot = args.directory
         else:
             print "ERROR! Specified output directory " + args.directory + " does not exist!"
