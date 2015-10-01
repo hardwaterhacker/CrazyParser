@@ -29,7 +29,7 @@ mike@hardwatersecurity.com
 '''
 
 __author__ = 'Mike Saunders'
-__version__ = '20150921'
+__version__ = '20150930'
 __email__ = 'mike@hardwatersecurity.com'
 
 import argparse
@@ -38,6 +38,7 @@ import sys
 import subprocess
 import csv
 import smtplib
+from tempfile import TemporaryFile
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
@@ -50,11 +51,51 @@ dnstwistPath = '/opt/dnstwist/dnstwist.py' # update if your installation differs
 # set up global defaults
 tempFiles = [] # define temporary files array
 
+def checkPerms(docRoot, resultsFile):
+    # Test if we have execute permissions to docRoot
+    if not os.access(docRoot, os.X_OK):
+        print "Destination directory " + docRoot + " not accessible."
+        print "Please check permissions.  Exiting..."
+        sys.exit()
+    else:
+        pass
+
+    # Test if we have write permissions to docRoot
+    try:
+        permtest = TemporaryFile('w+b', bufsize=-1, dir=docRoot)
+    except OSError:
+        print "Unable to write to desired directory: " + docRoot + "."
+        print "Please check permissions.  Exiting..."
+        sys.exit()
+
+def checkDepends(myDomains, knownDomains, urlcrazy, dnstwist):
+    # Test if mydomains.csv exists
+    if not os.access(myDomains, os.F_OK) or not os.access(knownDomains, os.F_OK):
+        print "Required configuration files - mydomains.csv or knowndomains.csv - not found."
+        print "Please verify configuration."
+        sys.exit()
+    else:
+        pass
+
+    # Test if urlcrazy exists
+    if urlcrazy:
+        if not os.access(urlcrazyPath, os.F_OK):
+            print "URLCrazy specified as " + urlcrazyPath + " but was not found."
+            print "Please check urlcrazyPath in crazyParser.py.  Exiting..."
+            sys.exit()
+
+    # Test if dnstwist exists
+    if dnstwist:
+        if not os.access(dnstwistPath, os.F_OK):
+            print "DNStwist specified as " + dnstwistPath + "but was not found."
+            print "Please check urlcrazyPath in crazyParser.py.  Exiting..."
+            sys.exit()
+                 
 def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
     # cleanup old results file
     try:
         os.remove(resultsFile)
-    except OSError: # file does not exist
+    except OSError:
         pass
     
     with open(myDomains, 'rb') as domains:
@@ -63,8 +104,7 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
             ucoutfile = os.path.join(docRoot,(domain.rstrip() + '.uctmp'))
             dtoutfile = os.path.join(docRoot,(domain.rstrip() + '.dttmp'))
             domain = domain.rstrip()
-
-
+                
             # Run urlcrazy if enabled
             ucargs=[urlcrazyPath, '-f', 'csv', '-o', ucoutfile, domain]
             if urlcrazy:
@@ -74,6 +114,7 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
                         tempFiles.append(ucoutfile)
                 except:
                     # An error occurred running urlcrazy
+                    ## Need to test if uelcrazy exists.  If not, raise exception.
                     print "Unexpected error running urlcrazy:", sys.exc_info()[0]
                     pass
 
@@ -87,6 +128,7 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
                     tempFiles.append(dtoutfile)
                 except:
                     # An error occurred running dnstwist
+                    ## Need to test if dnstwist exists.  If not, raise exception.
                     print "Unexpected error running dnstwist:", sys.exc_info()[0]
                     pass
     
@@ -275,15 +317,17 @@ def main():
             configDir = args.config
         else:
             print "ERROR! Specified configuration directory " + args.config + " does not exist!"
+            print "Exiting..."
             sys.exit()
     else:
         configDir = args.config
 
     if args.directory != os.getcwd():
-        if os.path.isdir(args.d):
+        if os.path.isdir(args.directory):
             docRoot = args.directory
         else:
             print "ERROR! Specified output directory " + args.directory + " does not exist!"
+            print "Exiting..."
             sys.exit()
     else:
         docRoot = args.directory
@@ -293,6 +337,12 @@ def main():
     myDomains = os.path.join(configDir,'mydomains.csv')
     knownDomains = os.path.join(configDir,'knowndomains.csv')
 
+    # Check to make sure we have the necessary permissions
+    checkPerms(docRoot, resultsFile)
+
+    # Check dependencies
+    checkDepends(myDomains, knownDomains, args.urlcrazy, args.dnstwist)
+    
     # Make sure to clean up any stale output files
     doCleanup(docRoot)
     
