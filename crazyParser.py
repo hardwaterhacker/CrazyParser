@@ -17,11 +17,11 @@ the results are mailed off for review and blocking in your web proxy.
             Valid Site if the domain belongs to a legitimate site.
 
 	urlcrazy: installed at /usr/bin/urlcrazy. If this installed in an
-            alternate location, the value of urlCrazy will need to be
+            alternate location, the value of urlcrazyPath will need to be
             updated to reflect its location.
 
-	dnstwist: installed at /opt/dnstwist/dnstwist. If this installed in an
-            alternate location, the value of dnstwist will need to be
+	dnstwist: installed at /opt/dnstwist/dnstwist.py. If this installed in an
+            alternate location, the value of dnstwistPath will need to be
             updated to reflect its location.
 
 crazyParser.py - by @hardwaterhacker - http://hardwatersec.blogspot.com
