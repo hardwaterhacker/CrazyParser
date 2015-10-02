@@ -70,15 +70,32 @@ def checkPerms(docRoot, resultsFile):
         print "Please check permissions.  Exiting..."
         sys.exit()
 
-def checkDepends(myDomains, knownDomains, urlcrazy, dnstwist):
+def checkDepends(myDomains, knownDomains, docRoot, resultsFile, urlcrazy, dnstwist):
     # Test if mydomains.csv exists
     if not os.access(myDomains, os.F_OK) or not os.access(knownDomains, os.F_OK):
         print "Required configuration files - mydomains.csv or knowndomains.csv - not found."
-        print "Please verify configuration."
+        print "Please verify configuration.  Exiting..."
         sys.exit()
     else:
         pass
 
+    # Test if docRoot is actually a directory
+    if not os.path.isdir(docRoot):
+        print "Argument: -d " + docRoot + " is not a directory."
+        print "Please review arguments.  Exiting..."
+        sys.exit()
+    else:
+        pass
+
+    # Ensure resultsFile isn't actually a directory
+    if os.path.exists(resultsFile) and not os.path.isfile(resultsFile):
+    #if not os.path.isfile(resultsFile):
+        print "Argument: -o " + resultsFile + " should be a regular file but is something else."
+        print "Please review arguments.  Exiting..."
+        sys.exit()
+    else:
+        pass
+        
     # Test if urlcrazy exists
     if urlcrazy:
         if not os.access(urlcrazyPath, os.F_OK):
@@ -104,12 +121,11 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
         reader = csv.reader(domains)
         for domain in domains:
             domain = domain.rstrip()
-            ucoutfile = tempfile.NamedTemporaryFile('w', bufsize=-1, suffix='.uctmp', prefix=domain + '.', dir=docRoot, delete=False)
-            dtoutfile = tempfile.NamedTemporaryFile('w', bufsize=-1, suffix='.dttmp', prefix=domain + '.', dir=docRoot, delete=False)
-              
+
             # Run urlcrazy if enabled
-            ucargs=[urlcrazyPath, '-f', 'csv', '-o', ucoutfile.name, domain]
             if urlcrazy:
+                ucoutfile = tempfile.NamedTemporaryFile('w', bufsize=-1, suffix='.uctmp', prefix=domain + '.', dir=docRoot, delete=False)
+                ucargs=[urlcrazyPath, '-f', 'csv', '-o', ucoutfile.name, domain]
                 try:
                     with open(os.devnull, 'w') as devnull:
                         subprocess.call(ucargs, stdout=devnull, close_fds=True, shell=False)
@@ -122,6 +138,7 @@ def doCrazy(docRoot, resultsFile, myDomains, urlcrazy, dnstwist):
             # Run dnstwist if enabled
             dtargs=[dnstwistPath, '-r', '-c', domain]
             if dnstwist:
+                dtoutfile = tempfile.NamedTemporaryFile('w', bufsize=-1, suffix='.dttmp', prefix=domain + '.', dir=docRoot, delete=False)
                 try:
                     with open(dtoutfile.name, 'wb') as dtout:
                         output=subprocess.check_output(dtargs, shell=False)
@@ -311,12 +328,12 @@ def main():
     resultsFile = os.path.join(docRoot, args.output)
     myDomains = os.path.join(configDir,'mydomains.csv')
     knownDomains = os.path.join(configDir,'knowndomains.csv')
-     
+
     # Check to make sure we have the necessary permissions
     checkPerms(docRoot, resultsFile)
 
     # Check dependencies
-    checkDepends(myDomains, knownDomains, args.urlcrazy, args.dnstwist)
+    checkDepends(myDomains, knownDomains, docRoot, resultsFile, args.urlcrazy, args.dnstwist)
 
     # Clean up output files at exit
     atexit.register(doCleanup, docRoot)
@@ -333,5 +350,5 @@ def main():
     else:
         pass
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     main()
