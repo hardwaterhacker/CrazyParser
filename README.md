@@ -4,7 +4,7 @@ CrazyParser is a python utility to automate the generation of potential typosqua
 This was originally created to notify security analysts of potential new typosquatted domains that may be used in a phishing attack.  Security analysts can use this information to enhance monitoring or place blocking in web proxies to prevent access to the phishing domain.
 
 # CrazyParser files
- - crazyParser.py - Python utility for automating URLCrazy queries
+ - crazyParser.py - Python utility for automating URLCrazy and dnstwist queries
  - mydomains.csv - contains all domains you wish to query for typosquatting
  - knowndomains.csv - contains domains previously identified valid or typosquatted domains
 
@@ -23,6 +23,3 @@ crazyParser takes each domain listed in mydomains.csv and uses URLCrazy and/or d
 
 # To Do
 - sendMail() will break if too many recipients are specified
-- Make parser arguments global
-- Due to changes in dnstwist, using an older version of dnstwist will cause the first two lines of dnstwist output to be truncated.
-- If crazyParser is run as a scheduled job and the scheduling frequency is more frequent than the amount of time it takes for crazyParser to finish executing, the temporary files will be clobbered and crazyParser will hang.  This becomes an issue when a large number of domains are entered in mydomains.csv and the interval between scheduled iterations is sufficiently small to prevent crazyParser from terminating before the next scheduled iteration.
